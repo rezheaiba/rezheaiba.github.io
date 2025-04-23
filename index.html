@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>活体检测测试</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #preview {
+            max-width: 500px;
+            margin: 20px auto;
+            display: none;
+        }
+        #result {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>活体检测测试</h1>
+        
+        <div class="upload-box">
+            <input type="file" id="imageInput" accept="image/*">
+            <p>点击选择或拖拽图片到此区域</p>
+        </div>
+
+        <img id="preview" alt="图片预览">
+        
+        <div class="loading">
+            <div class="loader"></div>
+            正在检测中...
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/tglasses';
+        
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = document.getElementById('preview');
+                    img.src = event.target.result;
+                    img.style.display = 'block';
+                    analyzeImage(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function analyzeImage(base64Image) {
+            showLoading(true);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        img: base64Image.split(',')[1] // 去掉base64前缀
+                    })
+                });
+
+                const data = await response.json();
+                showResult(data.live ? '真人检测通过 ✅' : '非真人检测 ❌');
+            } catch (error) {
+                showResult('请求失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            document.querySelector('.loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = text;
+            resultDiv.style.backgroundColor = text.includes('✅') ? '#d4edda' : '#f8d7da';
+            resultDiv.style.color = text.includes('✅') ? '#155724' : '#721c24';
+        }
+    </script>
+</body>
+</html> 
